@@ -12,7 +12,7 @@ all: app
 
 .PHONY: run
 run: $(EXECUTABLE)
-	$(EXECUTABLE) $(WF) $(WD)
+	@cd $(WD) && $(EXECUTABLE) $(WF)
 
 .PHONY: app
 app: $(EXECUTABLE)
