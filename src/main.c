@@ -1,9 +1,20 @@
+#define _POSIX_SOURCE
+#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE_EXTENDED
+#include <dirent.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
-enum Error { UNKNOWN_FLAG = 1, TOO_MANY_PATHS = 2 };
+enum Error {
+  UNKNOWN_FLAG = 1,
+  TOO_MANY_PATHS,
+  CANT_OPEN_FILE,
+  CANT_GET_STATUS
+};
 
 enum FilterFlag { UNKNOWN_FILTER, LINK, DIRECTORY, REGULAR_FILE, FILTER_COUNT };
 
@@ -65,6 +76,40 @@ bool scanFlags(const char *argument) {
   return true;
 }
 
+bool shouldBeShown(mode_t mode) {
+  switch (mode & S_IFMT) {
+  case S_IFLNK: return filters[LINK];
+  case S_IFDIR: return filters[DIRECTORY];
+  case S_IFREG: return filters[REGULAR_FILE];
+  default: return false;
+  }
+}
+
+void walk(const char *path) {
+  struct stat stat;
+  if (lstat(path, &stat)) {
+    printf("Can't get stat of file %s, error code: %d\n", path, errno);
+    exit(CANT_GET_STATUS);
+  }
+
+  if (shouldBeShown(stat.st_mode)) printf("%s\n", path);
+
+  int pathLength = strlen(path);
+  if (stat.st_mode & S_IFDIR) {
+    DIR *dir = opendir(path);
+    if (dir) {
+      struct dirent *entry;
+      while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0) continue;
+        if (strcmp(entry->d_name, "..") == 0) continue;
+        char childPath[pathLength + 256];
+        walk(strcat(strcat(strcpy(childPath, path), "/"), entry->d_name));
+      }
+      closedir(dir);
+    }
+  }
+}
+
 int main(int argc, char **argv) {
   const char *path = NULL;
   for (int i = 1; i < argc; i++) {
@@ -80,5 +125,5 @@ int main(int argc, char **argv) {
   if (!path) path = ".";
   if (!hasFilters()) enableAllFilters();
 
-  // TODO: Пора бы и вывести в консоль что-нибудь
+  walk(path);
 }
