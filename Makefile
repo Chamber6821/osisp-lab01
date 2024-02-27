@@ -1,3 +1,5 @@
+# https://stackoverflow.com/a/18258352/13830772
+rwildcard = $(filter-out \ ,$(foreach pattern,$(2),$(wildcard $(1)/$(pattern)))$(foreach child,$(wildcard $(1)/*),$(call rwildcard,$(child),$(2))))
 
 BUILD_DIR = build
 EXECUTABLE = $(BUILD_DIR)/main
@@ -6,7 +8,7 @@ WD ?= .
 
 CFLAGS = -W -Wall -Wextra -Werror -pedantic -std=c11
 CC = gcc $(CFLAGS)
-SOURCES = src/main.c
+SOURCES = $(call rwildcard,src,*.c)
 
 all: app
 
