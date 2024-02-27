@@ -1,6 +1,7 @@
 #define _POSIX_SOURCE
 #define _XOPEN_SOURCE
 #define _XOPEN_SOURCE_EXTENDED
+#define _DEFAULT_SOURCE
 #include <dirent.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -13,7 +14,8 @@ enum Error {
   UNKNOWN_FLAG = 1,
   TOO_MANY_PATHS,
   CANT_OPEN_FILE,
-  CANT_GET_STATUS
+  CANT_GET_STATUS,
+  FAILED_SCAN_DIR
 };
 
 enum FilterFlag { UNKNOWN_FILTER, LINK, DIRECTORY, REGULAR_FILE, FILTER_COUNT };
@@ -98,13 +100,23 @@ void walk(const char *path) {
   if (stat.st_mode & S_IFDIR) {
     DIR *dir = opendir(path);
     if (dir) {
-      struct dirent *entry;
-      while ((entry = readdir(dir)) != NULL) {
+      struct dirent **entries;
+      int count = scandir(path, &entries, NULL, alphasort);
+      if (count < 0) {
+        printf("Failed to scan dir '%s', error code: %d\n", path, errno);
+        exit(FAILED_SCAN_DIR);
+      }
+
+      for (int i = 0; i < count; i++) {
+        struct dirent *entry = entries[i];
         if (strcmp(entry->d_name, ".") == 0) continue;
         if (strcmp(entry->d_name, "..") == 0) continue;
         char childPath[pathLength + 256];
         walk(strcat(strcat(strcpy(childPath, path), "/"), entry->d_name));
+        free(entry);
       }
+      free(entries);
+
       closedir(dir);
     }
   }
