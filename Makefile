@@ -1,6 +1,8 @@
 
 BUILD_DIR = build
 EXECUTABLE = $(BUILD_DIR)/main
+WF ?= 
+WD ?= .
 
 CFLAGS = -W -Wall -Wextra -Werror -pedantic -std=c11
 CC = gcc $(CFLAGS)
@@ -10,7 +12,7 @@ all: app
 
 .PHONY: run
 run: $(EXECUTABLE)
-	@$(EXECUTABLE)
+	$(EXECUTABLE) $(WF) $(WD)
 
 .PHONY: app
 app: $(EXECUTABLE)
