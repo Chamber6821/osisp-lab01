@@ -10,6 +10,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#define error(code, format, ...)                                               \
+  do {                                                                         \
+    fprintf(stderr, format, __VA_ARGS__);                                      \
+    exit(code);                                                                \
+  } while (false)
+
 enum Error {
   UNKNOWN_FLAG = 1,
   TOO_MANY_PATHS,
@@ -67,13 +73,13 @@ bool scanFlags(const char *argument) {
       continue;
     }
 
-    printf(
+    error(
+        UNKNOWN_FLAG,
         "Unknown flag '%c' (%d) in argument '%s'\n",
         *it,
         (int)*it,
         argument
     );
-    exit(UNKNOWN_FLAG);
   }
   return true;
 }
@@ -89,10 +95,13 @@ bool shouldBeShown(mode_t mode) {
 
 void walk(const char *path) {
   struct stat stat;
-  if (lstat(path, &stat)) {
-    printf("Can't get stat of file %s, error code: %d\n", path, errno);
-    exit(CANT_GET_STATUS);
-  }
+  if (lstat(path, &stat))
+    error(
+        CANT_GET_STATUS,
+        "Can't get stat of file %s, error code: %d\n",
+        path,
+        errno
+    );
 
   if (shouldBeShown(stat.st_mode)) printf("%s\n", path);
 
@@ -102,10 +111,13 @@ void walk(const char *path) {
     if (dir) {
       struct dirent **entries;
       int count = scandir(path, &entries, NULL, alphasort);
-      if (count < 0) {
-        printf("Failed to scan dir '%s', error code: %d\n", path, errno);
-        exit(FAILED_SCAN_DIR);
-      }
+      if (count < 0)
+        error(
+            FAILED_SCAN_DIR,
+            "Failed to scan dir '%s', error code: %d\n",
+            path,
+            errno
+        );
 
       for (int i = 0; i < count; i++) {
         struct dirent *entry = entries[i];
@@ -127,10 +139,12 @@ int main(int argc, char **argv) {
   for (int i = 1; i < argc; i++) {
     char *argument = argv[i];
     bool isFlag = scanFlags(argument);
-    if (!isFlag && path) {
-      printf("Path must be once, but got second path: %s\n", argument);
-      exit(TOO_MANY_PATHS);
-    }
+    if (!isFlag && path)
+      error(
+          TOO_MANY_PATHS,
+          "Path must be once, but got second path: %s\n",
+          argument
+      );
     if (!isFlag && !path) path = argument;
   }
 
