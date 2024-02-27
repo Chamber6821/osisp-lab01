@@ -77,5 +77,8 @@ int main(int argc, char **argv) {
     if (!isFlag && !path) path = argument;
   }
 
+  if (!path) path = ".";
+  if (!hasFilters()) enableAllFilters();
+
   // TODO: Пора бы и вывести в консоль что-нибудь
 }
