@@ -120,12 +120,12 @@ void walk(const char *path) {
         );
 
       for (int i = 0; i < count; i++) {
-        struct dirent *entry = entries[i];
-        if (strcmp(entry->d_name, ".") == 0) continue;
-        if (strcmp(entry->d_name, "..") == 0) continue;
+        struct dirent entry = *(entries[i]);
+        free(entries[i]);
+        if (strcmp(entry.d_name, ".") == 0) continue;
+        if (strcmp(entry.d_name, "..") == 0) continue;
         char childPath[pathLength + 256];
-        walk(strcat(strcat(strcpy(childPath, path), "/"), entry->d_name));
-        free(entry);
+        walk(strcat(strcat(strcpy(childPath, path), "/"), entry.d_name));
       }
       free(entries);
 
